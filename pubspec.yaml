@@ -1,0 +1,42 @@
+name: myapp
+description: "A new Flutter project."
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0-278.1.beta
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.18.0
+  cupertino_icons: ^1.0.8
+  firebase_core: ^2.32.0
+  cloud_firestore: ^4.13.0
+  firebase_auth: ^4.0.0
+  firebase_auth_web: ^5.8.16
+  animations: ^2.0.11
+  crypto: ^3.0.3
+  fl_chart: ^1.0.0
+  flutter_custom_clippers: ^2.0.0
+  lottie: ^2.6.1
+  google_mlkit_face_detection: ^0.11.0
+  camera: ^0.10.5+9
+  google_mlkit_commons: ^0.7.0
+  permission_handler: ^11.3.0
+  local_auth: ^2.1.6
+  local_auth_android: ^1.0.32
+  local_auth_ios: ^1.1.4
+  local_auth_windows: ^1.0.7
+  firebase_storage: ^11.6.0
+  image_picker: ^1.0.4
+  convert: ^3.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
