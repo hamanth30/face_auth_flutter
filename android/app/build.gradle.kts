@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.myapp"
-    compileSdk = 35  // ✅ Explicitly set (better than flutter.compileSdkVersion)
+    compileSdk = 36  // ✅ Explicitly set (better than flutter.compileSdkVersion)
     ndkVersion = "27.0.12077973"  // ✅ Correct for ML Kit
 
     compileOptions {
@@ -23,7 +23,7 @@ android {
     defaultConfig {
         applicationId = "com.example.myapp"
         minSdk = 23  // ✅ ML Kit requires min 21, 23 is safer
-        targetSdk = 34  // ✅ Explicitly set
+        targetSdk = 36  // ✅ Explicitly set
         versionCode = flutter.versionCode ?: 1
         versionName = flutter.versionName ?: "1.0"
         multiDexEnabled = true  // ✅ Needed for Firebase
