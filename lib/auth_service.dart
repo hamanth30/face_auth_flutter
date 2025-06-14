@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
   // Sign up with email/password and return user UID
   Future<String?> signUpWithEmailPassword(String email, String password) async {
     try {
