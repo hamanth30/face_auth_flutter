@@ -2,6 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:geolocator/geolocator.dart';
 import 'face_utils.dart';
 import 'face_auth_service.dart';
 import 'auth_service.dart';
@@ -35,16 +36,25 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
 
   final FaceAuthService _faceAuthService = FaceAuthService();
 
+  bool? _locationAuthenticated;
+  String _locationMessage = '';
+
+  static const double officeLat = 12.9716; // Replace with your office latitude
+  static const double officeLng = 77.5946; // Replace with your office longitude
+  static const double allowedDistance = 50; // meters
+
   @override
   void initState() {
     super.initState();
     _checkIfEmulator();
     _initializeFaceDetector();
+    _checkLocation();
     _initializeCamera();
   }
 
   void _checkIfEmulator() {
-    _isEmulator = kDebugMode && (defaultTargetPlatform == TargetPlatform.android);
+    _isEmulator =
+        kDebugMode && (defaultTargetPlatform == TargetPlatform.android);
   }
 
   @override
@@ -77,11 +87,11 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
       );
 
       await _cameraController.initialize();
-      
+
       if (_isEmulator) {
         await Future.delayed(const Duration(milliseconds: 500));
       }
-      
+
       _cameraController.startImageStream(_processCameraImage);
 
       if (mounted) {
@@ -118,7 +128,7 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
       final rotation = FaceUtils.getImageRotation(_direction);
       final inputImage = FaceUtils.buildInputImage(image, rotation);
       final faces = await _faceDetector.processImage(inputImage);
-      
+
       if (mounted) {
         setState(() => _faces = faces);
       }
@@ -142,8 +152,8 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
   Future<void> _handleFaceDetection(Face face) async {
     setState(() {
       _isProcessing = true;
-      _statusMessage = widget.isRegistration 
-          ? 'Registering your face...' 
+      _statusMessage = widget.isRegistration
+          ? 'Registering your face...'
           : 'Verifying your face...';
     });
 
@@ -159,14 +169,17 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
         Navigator.of(context).pop(true);
       } else {
         // Verification flow
-        final isVerified = await _faceAuthService.verifyFace(widget.userId, face);
+        final isVerified = await _faceAuthService.verifyFace(
+          widget.userId,
+          face,
+        );
         setState(() {
           _isSuccess = isVerified;
-          _statusMessage = isVerified 
-              ? 'Face verified successfully!' 
+          _statusMessage = isVerified
+              ? 'Face verified successfully!'
               : 'Face verification failed';
         });
-        
+
         if (isVerified) {
           await Future.delayed(const Duration(seconds: 2));
           Navigator.of(context).pop(true);
@@ -207,6 +220,61 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
     await _initializeCamera();
   }
 
+  Future<void> _checkLocation() async {
+    setState(() {
+      _locationAuthenticated = null;
+      _locationMessage = 'Checking location...';
+    });
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _locationAuthenticated = false;
+        _locationMessage = 'Location services are disabled.';
+      });
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _locationAuthenticated = false;
+          _locationMessage = 'Location permission denied.';
+        });
+        return;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _locationAuthenticated = false;
+        _locationMessage = 'Location permission permanently denied.';
+      });
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition();
+    double distance = Geolocator.distanceBetween(
+      officeLat,
+      officeLng,
+      position.latitude,
+      position.longitude,
+    );
+
+    if (distance <= allowedDistance) {
+      setState(() {
+        _locationAuthenticated = true;
+        _locationMessage = 'Location authenticated!';
+      });
+    } else {
+      setState(() {
+        _locationAuthenticated = false;
+        _locationMessage = 'You are not within the office range.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,7 +288,32 @@ class _FaceAuthScreenState extends State<FaceAuthScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_locationMessage),
+              const SizedBox(width: 8),
+              if (_locationAuthenticated == true)
+                const Icon(Icons.check_circle, color: Colors.green)
+              else if (_locationAuthenticated == false)
+                const Icon(Icons.cancel, color: Colors.red),
+            ],
+          ),
+          Expanded(
+            child: _locationAuthenticated == true
+                ? _buildBody()
+                : Center(
+                    child: Text(
+                      'Face authentication is disabled until you are at the office.',
+                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
